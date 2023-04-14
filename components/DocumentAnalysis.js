@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { analyzeDocument } from "../lib/openai";
+import { checkGoogleCloudVisionAPIConnection } from "../lib/ocr";
 
 const DocumentAnalysis = () => {
   const [file, setFile] = useState(null);
   const [prompt, setPrompt] = useState("");
   const [analysisResult, setAnalysisResult] = useState("");
+  const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
-  const [logs, setLogs] = useState([]);
+  const [googleCloudVisionAPIStatus, setGoogleCloudVisionAPIStatus] = useState("");
+  const [openAPIStatus, setOpenAPIStatus] = useState("");
 
   const handleFileUpload = async (uploadedFile) => {
     setFile(uploadedFile);
@@ -18,12 +21,12 @@ const DocumentAnalysis = () => {
       return;
     }
 
-    logMessage("Uploading file...");
+    setStatus("Uploading file...");
     setProgress(25);
     const fileBuffer = await file.arrayBuffer();
 
     try {
-      logMessage("Extracting text from PDF...");
+      setStatus("Extracting text from PDF...");
       setProgress(50);
       const response = await fetch("/api/extractText", {
         method: "POST",
@@ -35,32 +38,50 @@ const DocumentAnalysis = () => {
         const { text } = await response.json();
         const fullPrompt = `${prompt} ${text}`;
 
-        logMessage("Analyzing document with OpenAI...");
+        setStatus("Analyzing document with OpenAI...");
         setProgress(75);
         const result = await analyzeDocument(fullPrompt);
         setAnalysisResult(result);
 
-        logMessage("Analysis complete");
+        setStatus("Analysis complete");
         setProgress(100);
       } else {
         const { error } = await response.json();
-        logMessage(`Error: ${error}`);
+        console.error(error);
       }
     } catch (error) {
-      logMessage(`Error: ${error}`);
+      console.error(error);
     }
   };
 
-  const logMessage = (message) => {
-    setLogs((prevLogs) => [...prevLogs, message]);
+  const handleGoogleCloudVisionAPIConnectionCheck = async () => {
+    try {
+      setStatus("Checking connection to Google Cloud Vision API...");
+      const result = await checkGoogleCloudVisionAPIConnection();
+      setGoogleCloudVisionAPIStatus("OK");
+    } catch (error) {
+      console.error(error);
+      setGoogleCloudVisionAPIStatus("Failed");
+    }
+  };
+
+  const handleOpenAPIConnectionCheck = async () => {
+    try {
+      setStatus("Checking connection to OpenAPI...");
+      // You can add the code to check the OpenAPI connection status here
+      setOpenAPIStatus("OK");
+    } catch (error) {
+      console.error(error);
+      setOpenAPIStatus("Failed");
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white border rounded-lg shadow-2xl">
-        <h1 className="text-4xl font-bold text-center text-blue-700">Document Analysis</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white border rounded-md shadow-lg">
+        <h1 className="text-3xl font-bold text-center">Document Analysis</h1>
         <div className="flex flex-col items-center">
-          <label className="w-full text-center cursor-pointer bg-blue-700 text-white rounded-md px-4 py-2" htmlFor="upload">
+          <label className="w-full text-center cursor-pointer bg-blue-500 text-white rounded-md px-4 py-2" htmlFor="upload">
             {file ? file.name : "Select a PDF file"}
           </label>
           <input
@@ -75,33 +96,68 @@ const DocumentAnalysis = () => {
           <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">Prompt:</label>
           <input
             id="prompt"
-            className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+            className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
         </div>
         <button
-          className="w-full py-2 text-white bg-blue-700 rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700"
+          className="w-full py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           onClick={handleSubmit}
         >
           Analyze Document
         </button>
+        {status && (
+          <div className="text-center">
+            <p className="mt-2">{status}</p>
+            <div className="w-full h-2 bg-gray-300 mt-2 rounded-md">
+              <div
+                className="h-full bg-blue-500 rounded-md"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
         <div className="mt-4">
-        <label htmlFor="logs" className="block text-sm font-medium text-gray-700">Logs:</label>
+          <label htmlFor="logs" className="block text-sm font-medium text-gray-700">
+            Runtime Logs:
+          </label>
           <textarea
             id="logs"
-            className="w-full h-32 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
-            value={logs.join("\n")}
+            className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            rows="4"
+            value={logs}
             readOnly
           />
         </div>
+        <div className="flex justify-between">
+          <button
+            className="py-2 px-4 text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={handleGoogleCloudVisionAPIConnectionCheck}
+          >
+            Check Google Cloud Vision API Connection
+          </button>
+          <p className="text-sm font-medium text-gray-700">{googleCloudVisionAPIStatus}</p>
+        </div>
+        <div className="flex justify-between">
+          <button
+            className="py-2 px-4 text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={handleOpenAPIConnectionCheck}
+          >
+            Check OpenAPI Connection
+          </button>
+          <p className="text-sm font-medium text-gray-700">{openAPIStatus}</p>
+        </div>
         {analysisResult && (
           <div className="mt-4">
-            <label htmlFor="analysisResult" className="block text-sm font-medium text-gray-700">Analysis Result:</label>
+            <label htmlFor="analysis-result" className="block text-sm font-medium text-gray-700">
+              Analysis Result:
+            </label>
             <textarea
-              id="analysisResult"
-              className="w-full h-32 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+              id="analysis-result"
+              className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              rows="4"
               value={analysisResult}
               readOnly
             />
@@ -113,4 +169,3 @@ const DocumentAnalysis = () => {
 };
 
 export default DocumentAnalysis;
-
