@@ -1,6 +1,10 @@
-module.exports = {
-  env: {
-    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  },
-};
+=module.exports = {
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.node = {
+        fs: 'empty'
+      }
+    }
+    return config
+  }
+}
