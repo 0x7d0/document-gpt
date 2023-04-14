@@ -5,8 +5,8 @@ const DocumentAnalysis = () => {
   const [file, setFile] = useState(null);
   const [prompt, setPrompt] = useState("");
   const [analysisResult, setAnalysisResult] = useState("");
-  const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
+  const [logs, setLogs] = useState([]);
 
   const handleFileUpload = async (uploadedFile) => {
     setFile(uploadedFile);
@@ -18,12 +18,12 @@ const DocumentAnalysis = () => {
       return;
     }
 
-    setStatus("Uploading file...");
+    logMessage("Uploading file...");
     setProgress(25);
     const fileBuffer = await file.arrayBuffer();
 
     try {
-      setStatus("Extracting text from PDF...");
+      logMessage("Extracting text from PDF...");
       setProgress(50);
       const response = await fetch("/api/extractText", {
         method: "POST",
@@ -35,28 +35,32 @@ const DocumentAnalysis = () => {
         const { text } = await response.json();
         const fullPrompt = `${prompt} ${text}`;
 
-        setStatus("Analyzing document with OpenAI...");
+        logMessage("Analyzing document with OpenAI...");
         setProgress(75);
         const result = await analyzeDocument(fullPrompt);
         setAnalysisResult(result);
 
-        setStatus("Analysis complete");
+        logMessage("Analysis complete");
         setProgress(100);
       } else {
         const { error } = await response.json();
-        console.error(error);
+        logMessage(`Error: ${error}`);
       }
     } catch (error) {
-      console.error(error);
+      logMessage(`Error: ${error}`);
     }
   };
 
+  const logMessage = (message) => {
+    setLogs((prevLogs) => [...prevLogs, message]);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white border rounded-md shadow-lg">
-        <h1 className="text-3xl font-bold text-center">Document Analysis</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white border rounded-lg shadow-2xl">
+        <h1 className="text-4xl font-bold text-center text-blue-700">Document Analysis</h1>
         <div className="flex flex-col items-center">
-          <label className="w-full text-center cursor-pointer bg-blue-500 text-white rounded-md px-4 py-2" htmlFor="upload">
+          <label className="w-full text-center cursor-pointer bg-blue-700 text-white rounded-md px-4 py-2" htmlFor="upload">
             {file ? file.name : "Select a PDF file"}
           </label>
           <input
@@ -71,34 +75,33 @@ const DocumentAnalysis = () => {
           <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">Prompt:</label>
           <input
             id="prompt"
-            className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
         </div>
         <button
-          className="w-full py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="w-full py-2 text-white bg-blue-700 rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-700"
           onClick={handleSubmit}
         >
           Analyze Document
         </button>
-        {status && (
-          <div className="text-center">
-            <p className="mt-2">{status}</p>
-            <div className="w-full h-2 bg-gray-300 mt-2 rounded-md">
-              <div
-                className="h-full bg-blue-500 rounded-md"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
+        <div className="mt-4">
+        <label htmlFor="logs" className="block text-sm font-medium text-gray-700">Logs:</label>
+          <textarea
+            id="logs"
+            className="w-full h-32 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+            value={logs.join("\n")}
+            readOnly
+          />
+        </div>
         {analysisResult && (
-          <div>
-            <h2 className="text-xl font-semibold">Analysis Result:</h2>
+          <div className="mt-4">
+            <label htmlFor="analysisResult" className="block text-sm font-medium text-gray-700">Analysis Result:</label>
             <textarea
-              className="w-full h-32 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              id="analysisResult"
+              className="w-full h-32 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
               value={analysisResult}
               readOnly
             />
