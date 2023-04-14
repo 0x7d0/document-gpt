@@ -3,11 +3,20 @@ import { analyzeDocument } from "../lib/openai";
 
 const DocumentAnalysis = () => {
   const [file, setFile] = useState(null);
+  const [prompt, setPrompt] = useState("");
   const [analysisResult, setAnalysisResult] = useState("");
 
   const handleFileUpload = async (uploadedFile) => {
     setFile(uploadedFile);
-    const fileBuffer = await uploadedFile.arrayBuffer();
+  };
+
+  const handleSubmit = async () => {
+    if (!file) {
+      alert("Please select a PDF file");
+      return;
+    }
+
+    const fileBuffer = await file.arrayBuffer();
 
     try {
       const response = await fetch("/api/extractText", {
@@ -18,8 +27,8 @@ const DocumentAnalysis = () => {
 
       if (response.ok) {
         const { text } = await response.json();
-        const prompt = `Analyze the following Polish legal document and provide a summary: ${text}`;
-        const result = await analyzeDocument(prompt);
+        const fullPrompt = `${prompt} ${text}`;
+        const result = await analyzeDocument(fullPrompt);
         setAnalysisResult(result);
       } else {
         const { error } = await response.json();
@@ -46,10 +55,30 @@ const DocumentAnalysis = () => {
             onChange={(e) => handleFileUpload(e.target.files[0])}
           />
         </div>
+        <div>
+          <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">Prompt:</label>
+          <input
+            id="prompt"
+            className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            type="text"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+        </div>
+        <button
+          className="w-full py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          onClick={handleSubmit}
+        >
+          Analyze Document
+        </button>
         {analysisResult && (
           <div>
             <h2 className="text-xl font-semibold">Analysis Result:</h2>
-            <p>{analysisResult}</p>
+            <textarea
+              className="w-full h-32 mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              value={analysisResult}
+              readOnly
+            />
           </div>
         )}
       </div>
