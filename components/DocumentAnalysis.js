@@ -5,6 +5,8 @@ const DocumentAnalysis = () => {
   const [file, setFile] = useState(null);
   const [prompt, setPrompt] = useState("");
   const [analysisResult, setAnalysisResult] = useState("");
+  const [status, setStatus] = useState("");
+  const [progress, setProgress] = useState(0);
 
   const handleFileUpload = async (uploadedFile) => {
     setFile(uploadedFile);
@@ -16,9 +18,13 @@ const DocumentAnalysis = () => {
       return;
     }
 
+    setStatus("Uploading file...");
+    setProgress(25);
     const fileBuffer = await file.arrayBuffer();
 
     try {
+      setStatus("Extracting text from PDF...");
+      setProgress(50);
       const response = await fetch("/api/extractText", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,8 +34,14 @@ const DocumentAnalysis = () => {
       if (response.ok) {
         const { text } = await response.json();
         const fullPrompt = `${prompt} ${text}`;
+
+        setStatus("Analyzing document with OpenAI...");
+        setProgress(75);
         const result = await analyzeDocument(fullPrompt);
         setAnalysisResult(result);
+
+        setStatus("Analysis complete");
+        setProgress(100);
       } else {
         const { error } = await response.json();
         console.error(error);
@@ -71,6 +83,17 @@ const DocumentAnalysis = () => {
         >
           Analyze Document
         </button>
+        {status && (
+          <div className="text-center">
+            <p className="mt-2">{status}</p>
+            <div className="w-full h-2 bg-gray-300 mt-2 rounded-md">
+              <div
+                className="h-full bg-blue-500 rounded-md"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
         {analysisResult && (
           <div>
             <h2 className="text-xl font-semibold">Analysis Result:</h2>
@@ -87,3 +110,4 @@ const DocumentAnalysis = () => {
 };
 
 export default DocumentAnalysis;
+
