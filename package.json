@@ -28,7 +28,8 @@
       "react": "^17.0.2",
       "react-dom": "^17.0.2",
       "tailwindcss": "^3.0.7",
-      "googleapis": "^117.0.0"
+      "googleapis": "^117.0.0",
+      "dotenv": "^16.0.3"
     }
   }
   
