@@ -8,6 +8,7 @@ module.exports = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback.fs = false;
+      config.resolve.fallback.http2 = require.resolve('http2');
     }
     return config;
   },
