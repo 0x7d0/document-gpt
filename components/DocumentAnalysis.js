@@ -57,13 +57,20 @@ const DocumentAnalysis = () => {
   const handleGoogleCloudVisionAPIConnectionCheck = async () => {
     try {
       setStatus("Checking connection to Google Cloud Vision API...");
-      const result = await checkGoogleCloudVisionAPIConnection();
-      setGoogleCloudVisionAPIStatus("OK");
+      const response = await fetch("/api/ocr");
+      const result = await response.json();
+      if (response.ok) {
+        setGoogleCloudVisionAPIStatus("OK");
+      } else {
+        console.error(result.error);
+        setGoogleCloudVisionAPIStatus("Failed");
+      }
     } catch (error) {
       console.error(error);
       setGoogleCloudVisionAPIStatus("Failed");
     }
   };
+  
 
   const handleOpenAPIConnectionCheck = async () => {
     try {
