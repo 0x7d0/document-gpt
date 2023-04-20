@@ -10,7 +10,11 @@ module.exports = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback.fs = false;
-      config.plugins.push(new webpack.IgnorePlugin(/^http2$/));
+      config.plugins.push(new webpack.IgnorePlugin({
+        resourceRegExp: /^http2$/,
+        contextRegExp: /googleapis-common/,
+    }));
+    
     }
     return config;
   },
