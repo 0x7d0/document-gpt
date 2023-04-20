@@ -10,6 +10,9 @@ module.exports = {
       config.resolve.fallback.fs = false;
       config.resolve.fallback.http2 = require.resolve('http2');
     }
+
+    config.plugins.push(new webpack.IgnorePlugin(/^http2$/));
+    
     return config;
   },
 };
