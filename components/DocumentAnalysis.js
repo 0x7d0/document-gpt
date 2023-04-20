@@ -20,39 +20,44 @@ const DocumentAnalysis = () => {
       alert("Please select a PDF file");
       return;
     }
-
-    setStatus("Uploading file...");
+  
+    setStatus("Uploading file to Google Cloud Storage...");
     setProgress(25);
-    const fileBuffer = await file.arrayBuffer();
-
+  
     try {
-      setStatus("Extracting text from PDF...");
-      setProgress(50);
-      const response = await fetch("/api/extractText", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileBuffer: Buffer.from(fileBuffer).toString("base64") }),
+      const storage = new Storage();
+      const bucket = storage.bucket(bucketName);
+      const filename = `${Date.now()}_${file.name}`;
+      const fileStream = file.createReadStream();
+  
+      const [uploadResponse] = await bucket.upload(fileStream, {
+        destination: filename,
+        metadata: {
+          contentType: file.mimetype,
+        },
       });
-
-      if (response.ok) {
-        const { text } = await response.json();
-        const fullPrompt = `${prompt} ${text}`;
-
-        setStatus("Analyzing document with OpenAI...");
-        setProgress(75);
-        const result = await analyzeDocument(fullPrompt);
-        setAnalysisResult(result);
-
-        setStatus("Analysis complete");
-        setProgress(100);
-      } else {
-        const { error } = await response.json();
-        console.error(error);
-      }
+  
+      const gcsUri = `gs://${bucketName}/${filename}`;
+  
+      setStatus("Analyzing document with Google Cloud Vision API...");
+      setProgress(50);
+      const [visionResponse] = await client.textDetection(gcsUri);
+  
+      const text = visionResponse.fullTextAnnotation.text;
+      const fullPrompt = `${prompt} ${text}`;
+  
+      setStatus("Analyzing document with OpenAI...");
+      setProgress(75);
+      const result = await analyzeDocument(fullPrompt);
+      setAnalysisResult(result);
+  
+      setStatus("Analysis complete");
+      setProgress(100);
     } catch (error) {
       console.error(error);
     }
   };
+  
 
   const handleGoogleCloudVisionAPIConnectionCheck = async () => {
     try {
