@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { analyzeDocument } from "../lib/openai";
 import { checkGoogleCloudVisionAPIConnection } from "../lib/ocr";
-import { processImageServer } from "../lib/serverAuth";
+import { processImageServer } from "../lib/auth";
 
 const DocumentAnalysis = () => {
   const [file, setFile] = useState(null);
